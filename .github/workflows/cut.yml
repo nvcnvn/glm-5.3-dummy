@@ -1,0 +1,45 @@
+name: cut
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Source repo on Hugging Face
+        default: PhalaCloud/GLM-5.3-W4AFP8
+      revision:
+        description: Source revision (empty for the current main)
+        default: 03179e95916f9f79a92536e76da63f9251d93d4f
+      layers:
+        description: Decoder layers to keep
+        default: "8"
+      repo:
+        description: Hugging Face repo to upload to
+        default: nvcnvn/GLM-5.3-W4AFP8-8L
+      license_from:
+        description: Repo to take LICENSE from when the source has none
+        default: zai-org/GLM-5.3
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cut-${{ inputs.repo }}
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - name: Cut and upload
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SOURCE: ${{ inputs.source }}
+          REVISION: ${{ inputs.revision }}
+          LAYERS: ${{ inputs.layers }}
+          REPO: ${{ inputs.repo }}
+          LICENSE_FROM: ${{ inputs.license_from }}
+        run: |
+          uv run cut.py --source "$SOURCE" ${REVISION:+--revision "$REVISION"} --layers "$LAYERS" \
+            --repo "$REPO" --license-from "$LICENSE_FROM" --out "$RUNNER_TEMP/out"
